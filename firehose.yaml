@@ -1,0 +1,12 @@
+start:
+  args:
+  - firehose
+  flags:
+    # Common configuration
+    log-to-file: false
+    common-blocks-store-url: ./blocks/merged
+    # We do not connect to live blocks yet nor have block meta, so we set it to empty string to disable live blocks handling for now
+    common-blockstream-addr: ""
+    common-blockmeta-addr: ""
+
+    firehose-grpc-listen-addr: ":9000*"
