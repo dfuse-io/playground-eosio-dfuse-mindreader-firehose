@@ -1,18 +1,26 @@
-## Playground - Generate dfuse Block using Mindreader and start dfuse Firehose
+## Playground - dfuse for EOSIO - Firehose
 
-In this playground, we show case how you can start syncing a dfuse Mindreader with your network
-in a process and start the dfuse Firehose app that consumes those blocks to offer a stream of blocks.
+In this playground, we show case how you can use dfuse to stream blocks out of an EOSIO
+chain. We are going leverage the dfuse for EOSIO binary to:
 
-We will sync with Telos to showcase a low/medium traffic chain, syncing EOS Mainnet would require
-more horsepower than necessary for this guide.
+- Start a managed `nodeos` process
+- Generate dfuse Blocks out of it using dfuse Mindreader
+- Start dfuse Firehose so you can have a stream of blocks
+- Convert everything to stream live data (TBC)
+- Production grade setup (TBC)
+
+We will sync with Telos chain to showcase a medium traffic chain, syncing EOS Mainnet would
+require more horsepower than necessary for this guide. Note that expect for a few `nodeos`
+tweak, all the details given here applies to all EOSIO chain that uses the standard `nodeos`
+binary.
 
 What do you need to start:
-- dfuse Instrumented `nodeos` (deep-mind) binary (https://github.com/dfuse-io/dfuse-eosio/blob/develop/DEPENDENCIES.md#dfuse-instrumented-eosio-prebuilt-binaries)
 - Latest version of dfuse for EOSIO binary (https://github.com/dfuse-io/dfuse-eosio#from-source)
-- An Telos snapshot that can be found here: https://snapshots.eosamsterdam.net/public/telos/, see [Snapshots Section](#snapshots) for instructions.
+- dfuse Instrumented `nodeos` (deep-mind) binary (https://github.com/dfuse-io/dfuse-eosio/blob/develop/DEPENDENCIES.md#dfuse-instrumented-eosio-prebuilt-binaries)
+- A Telos EOSIO snapshot (can be downloaded at https://snapshots.eosamsterdam.net/public/telos/, see [Snapshots Section](#snapshots) for further instructions).
 
 **Note** The pre-built binary (https://github.com/dfuse-io/dfuse-eosio/releases) could work, it's just
-not the one that was tested.
+not the one that was used at time of writing.
 
 Ensure that both are working are correclty installed/available with the following commands:
 
@@ -27,43 +35,51 @@ dfuseeos version 0.1.0-beta8-437fe37d92afafcbcdc2efb850162f3372673bf0
 
 If one of the two command fails, check back the instructions or seek for support.
 
-### In This Guide
+### Guide
+
+In this guide, we are going to launch different dfuse for EOSIO processes, each configured
+to run a subset of the all the apps present in the single-binary that is `dfuseeos`.
 
 We are going to run a dfuse Mindreader app that manages `nodeos` (start it, controls it, etc) and that
-automatically produces dfuse Blocks. We will then consume those dfuse Blocks to offer a dfuse Firehose
-streams of those.
+automatically produces dfuse Blocks.
 
-#### Mindreader
+We will then launch the dfuse Firehose app which consumes those dfuse Blocks and provides
+a nice stream of blocks over gRPC so it can be consumed in your language of choice.
 
-Let's first start dfuse Mindreader to generate merged blocks. Prior that, edit the `mindreader.yaml`
-config and find the `` line, update it to point to the name of the snapshot file your downloaded.
+#### Start a managed `nodeos` process
 
-Then run
+Let's first start dfuse Mindreader to generate dfuse Blocks. Prior running the required commands, ensure you have your Telos snapshot downloaded to your disk, follow the [Snapshots Section](#snapshots) for details. Edit the `mindreader.yaml` config file and find the `mindreader-bootstrap-snapshot-name` line, update it to point to the name of the snapshot file your downloaded.
+
+If you are on Unix (and not OS X), tweak `mindreaer/config.ini` an enable the commented settings for EOS VM, this will speed reprocessing of blocks.
+
+When you are ready, simply launch the following command:
 
 ```bash
 dfuseeos start -c mindreader.yaml -d run/mindreader -v
 ```
 
-This start dfuse for EOSIO, tells it to use the `mindreader.yaml` config file and use `run/mindreader` as
-it's transient data directory. The config tells dfuse Mindreader where to write merged block (in `./blocks/merged`).
+This starts dfuse for EOSIO, tells it to use the `mindreader.yaml` config file and use `run/mindreader` as its transient data directory, it contains for example the `nodeos` data directory like the blocks log and the state file(s).
 
-It will take a 2 to 3 minutes to start syncing, let it run something like 10m, you can monitor the `./blocks/merged`
-file for generated dfuse Blocks:
+The config file tells the binary to launch dfuse Mindreader and dfuse Merger and to write merged dfuse Blocks in `./blocks/merged` folder.
+
+It will take a 2 to 3 minutes to start syncing, since we are starting from an exisiting EOSIO snapshot.
+
+You can then let this process run, it will eventually catch up with the head of the chain. The amount of time it will takes to reach the live segment depends on multiple factor like how far the snapshot was, how fast is your CPU, if you are using the EOS VM or not and others.
+
+After a few minutes, you should starting having dfuse Blocks in the `./blocks/merged`
+folder, you can monitor it to see where you stands:
 
 ```bash
-# After running ~7m
+# After running ~5m
 ls blocks/merged | wc -l
-     229
+229
 
 du -sh blocks/merged
- 85M	blocks/merged
+85M	blocks/merged
 ```
 
-At that point, we had 229 files (so 22 900 blocks (229 * 100)) generated, if you let it run long enough, it
-will eventually catch up and stay in sync with the chain.
-
-When you have a couple thousand of blocks available, note the start and end block you have, we will use that
-in the next step to test bench dfuse Firehose.
+At that point, we had 229 files which represents 22 900 blocks (229 * 100), When you have a couple thousand of blocks available, note the start and end block you have, we will use that
+in the next step when querying dfuse Firehose.
 
 ```
 ls blocks/merged | sort | head -n1
@@ -73,29 +89,26 @@ ls blocks/merged | sort | tail -n1
 0127388400.dbin.zst
 ```
 
-Start block will #127 365 600 and end block will be #127 388 400.
+Start block will #127 365 600 and end block will be #127 388 499.
 
-#### Firehose
+#### Start dfuse Firehose
 
 Now, you can start another dfuse for EOSIO process with a different config file and
 different data directory.
 
-This time, we are going to launch dfuse Firehose with the merged blocks that we have
-generated so far, note that the other process could still be running, you will be able
-to fetch a bigger range as blocks are generated.
+This time, we are going to launch dfuse Firehose with the merged dfuse Blocks we generated so far, note that the blocks generation process can still run in parallel, dfuse Blocks are immutable once written to disk, so other processes can use the generate dfuse Blocks already.
 
 ```bash
 dfuseeos start -c firehose.yaml -d run/firehose -v
 ```
 
-**Note** You can run with `-vvv` to increase the verbosity level, usefull to see what
+**Note** You can run with `-vvv` to increase the verbosity level, useful to see what
 dfuse for EOSIO is trying to do.
 
 You now have dfuse Firehose running a gRPC connection over TLS with a self-signed
-certificate. Let's try to query a range of blocks.
+certificate. Let's try to query a range of blocks from it.
 
-We will query 400 blocks after the start block we noted, this is because some past
-blocks must exist to fill our forking resolver algorithm.
+We will query 400 blocks after the start block we noted earlier, dfuse stack requires few hundred blocks prior where we want to start to fill up the fork resolver algorithm.
 
 Open another terminal an uses `grpcurl` to fetch the service.
 
@@ -127,9 +140,9 @@ go run . -s -o - localhost:9000 "receiver in ['eosio']" "127 366 000 - 127 366 0
 
 **Note** The script is asking for a `DFUSE_API_KEY` environment here, it's not technically
 required, your local endpoint is not authenticating. But the playground is not configurable
-yet to connect to unauthenticated endpoint
+yet to connect to unauthenticated endpoint, this will be lifted in the future.
 
-You should see the following output:
+You should now see the following output:
 
 ```
 go run . -s -o - localhost:9000 "receiver in ['eosio']" "127 366 000 - 127 366 001"
@@ -145,9 +158,13 @@ Block received: 2 block/min (2 block total)
 Bytes received: 1560 byte/min (1560 byte total)
 ```
 
-#### Next Steps
+#### Convert everything to stream live data (TBC)
 
-The next steps will be to run everything using a live setup, TBC.
+TBC
+
+#### Production grade setup (TBC)
+
+TBC
 
 ### Snapshots
 
@@ -158,9 +175,9 @@ Download the Telos snapshot, decompress it (you will need `zstd` binary) and mov
 # We assume you are at the root of this project, update link to latest snapshot
 wget https://snapshots.eosamsterdam.net/public/telos/2020-12-21/telos_snapshot_127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin.zst
 
+# Adjust the command to fit with the name of the snapshot you downloaded
 zstd -d telos_snapshot_127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin.zst
 
-# Adjust the command to fit with the name of the latest snapshot
 mv telos_snapshot_127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin snapshots/127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin
 
 rm -rf telos_snapshot_127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin.zst
