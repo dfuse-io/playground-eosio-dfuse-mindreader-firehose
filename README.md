@@ -1,4 +1,4 @@
-## Playground - Generate dfuse Block using Mindreader
+## Playground - Generate dfuse Block using Mindreader and start dfuse Firehose
 
 In this playground, we show case how you can start syncing a dfuse Mindreader with your network
 in a process and start the dfuse Firehose app that consumes those blocks to offer a stream of blocks.
@@ -9,7 +9,7 @@ more horsepower than necessary for this guide.
 What do you need to start:
 - dfuse Instrumented `nodeos` (deep-mind) binary (https://github.com/dfuse-io/dfuse-eosio/blob/develop/DEPENDENCIES.md#dfuse-instrumented-eosio-prebuilt-binaries)
 - Latest version of dfuse for EOSIO binary (https://github.com/dfuse-io/dfuse-eosio#from-source)
-- An Telos snapshot that can be found here: https://snapshots.eosamsterdam.net/public/telos/, see [Snapshots Section](#snapshot) for instructions.
+- An Telos snapshot that can be found here: https://snapshots.eosamsterdam.net/public/telos/, see [Snapshots Section](#snapshots) for instructions.
 
 **Note** The pre-built binary (https://github.com/dfuse-io/dfuse-eosio/releases) could work, it's just
 not the one that was tested.
