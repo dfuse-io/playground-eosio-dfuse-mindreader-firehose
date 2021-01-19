@@ -8,14 +8,25 @@ start:
     common-blocks-store-url: ./blocks/merged
     common-oneblock-store-url: ./blocks/one
 
-    # Mindreader configuration (`mindreader-nodeos-api-addr` must first Nodeos config defined in `./mindreader/config.ini`)
+    ## Mindreader configuration (`mindreader-nodeos-api-addr` must fit Nodeos config defined in `./mindreader/config.ini`)
+    # The gRPC endpoint Mindreader listens to for real-time blocks stream (`dfuse.bstream.v1.BlockStream` service)
+    mindreader-grpc-listen-addr: :9901
+    # The HTTP endpoint Mindreader listens to for controlling the `nodeos` process (stop, start, take snaphost, restore from snapshot, take backup, etc.)
     mindreader-manager-api-addr: :8080
+    # The HTTP endpoint `nodeos` process listens to for performing Nodeos RPC call(s)
     mindreader-nodeos-api-addr: localhost:8888
-    mindreader-config-dir: ./mindreader
-    mindreader-readiness-max-latency: 5s
+    # The directory that contains the `config.ini` and `genesis.json` file used to start `nodeos`
+    mindreader-config-dir: ./config/mindreader
+    # The folder where we can find EOSIO snapshots, used to resolve snapshot names (for command flags, controlling API parameters, etc.)
     mindreader-snapshot-store-url: ./snapshots
+    # The EOSIO snapshot file name to use to bootstrap `nodeos`, takes effect when no `nodeos` prior data exists
     mindreader-bootstrap-snapshot-name: "127365532_0797719c55b9d42b7d00c54512bfa1e31be650c56060765ae7f93cfbf2c0b282.bin"
+    # All blocks older than 4h will be automatically merged by Mindreader without being output as a one-block file
+    mindreader-merge-threshold-block-age: 4h
+    # The maximum amount of blocks that can in queue waiting to be written as a one block to disk, required on low traffic chain when reprocessing blocks
     mindreader-blocks-chan-capacity: 100000
+    # If a failure occurs on start up, do not try to restore from auto-restore source (snapshot by default)
     mindreader-start-failure-handler: false
-    mindreader-log-to-zap: true
-    mindreader-shutdown-delay: 20s
+    # The `nodeos` logs will be printed as-is without being formatted along side other dfuse for EOSIO logs
+    mindreader-log-to-zap: false
+

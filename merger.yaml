@@ -1,0 +1,14 @@
+start:
+  args:
+  - merger
+  flags:
+    # Common configuration
+    log-to-file: false
+    common-blocks-store-url: ./blocks/merged
+    common-oneblock-store-url: ./blocks/one
+
+    ## Merger configuration
+    # The gRPC endpoint Merger listens to for pending merge blocks stream (`dfuse.merger.v1.Merger` service)
+    merger-grpc-listen-addr: :9902
+    # If there is more one blocks file than this value, the merger will refuse to merge one blocks into a bundle
+    merger-max-one-block-operations-batch-size: 50000
