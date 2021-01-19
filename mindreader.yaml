@@ -1,6 +1,5 @@
 start:
   args:
-  - merger
   - mindreader
   flags:
     # Common configuration

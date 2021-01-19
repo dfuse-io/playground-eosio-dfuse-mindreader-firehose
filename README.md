@@ -70,6 +70,8 @@ The config file tells the binary to launch dfuse Mindreader and dfuse Merger and
 
 It will take a 2 to 3 minutes to start syncing, since we are starting from an exisiting EOSIO snapshot.
 
+**Note** dfuse Mindreader when starting from snapshot has the current caveats to left one-blocks file behind when starting to automatically merge blocks. After you see some merged blocks in `./blocks/merged`, delete one-blocks files in folder `./blocks/one`.
+
 You can then let this process run, it will eventually catch up with the head of the chain. The amount of time it will takes to reach the live segment depends on multiple factor like how far the snapshot was, how fast is your CPU, if you are using the EOS VM or not and others.
 
 After a few minutes, you should starting having dfuse Blocks in the `./blocks/merged` folder. When Mindreader detects that the blocks its generating are old enough (>12h by default, >4h in `mindreader.yaml` config file), it will automatically merge them together. If you are near real-time blocks, the blocks are not merged automatically and start accumulating in the one blocks folder, the dfuse Merger will need to run to do the merging job.
