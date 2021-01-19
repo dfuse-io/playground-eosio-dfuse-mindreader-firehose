@@ -1,2 +1,3 @@
-*.bin
-*.zst
+# Ignoring everything in there, we don't want to commit snapshots by mistake
+*
+!.gitignore
